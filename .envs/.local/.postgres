@@ -1,0 +1,7 @@
+# PostgreSQL
+# ------------------------------------------------------------------------------
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+POSTGRES_DB=health_huddle
+POSTGRES_USER=LsXVqhsaSYarEbTTyHhUuMSoSPjrbpNq
+POSTGRES_PASSWORD=3uRoQQ1Mkh6TAWOUpYsMNW8KBIiKCJoJNuQHDw6AQ2NyWcQRLRYNQ3uJOXRGmN4b

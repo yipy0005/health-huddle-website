@@ -1,0 +1,74 @@
+[workspace]
+name = "health_huddle"
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "linux-64", "linux-aarch64"]
+
+[dependencies]
+python = "3.14.*"
+libpq = "*"
+postgresql = "*"
+c-compiler = "*"
+pkg-config = "*"
+gettext = "*"
+
+[pypi-dependencies]
+argon2-cffi = "==25.1.0"
+crispy-bootstrap5 = "==2026.9"
+django = "==6.0.10"
+django-allauth = { version = "==65.22.1", extras = ["mfa"] }
+django-anymail = "==15.2"
+django-crispy-forms = "==2.7"
+django-environ = "==0.14.0"
+django-model-utils = "==5.0.0"
+django-redis = "==7.0.0"
+gunicorn = "==27.0.1"
+hiredis = "==3.5.0"
+pillow = "==13.0.0"
+psycopg = { version = "==3.3.9", extras = ["c"] }
+python-slugify = "==9.1.3"
+redis = "==8.1.0"
+whitenoise = "==6.12.0"
+
+[feature.dev.pypi-dependencies]
+coverage = "==7.17.3"
+django-coverage-plugin = "==3.2.2"
+django-debug-toolbar = "==8.0.0"
+django-extensions = "==4.1"
+django-stubs = { version = "==6.1.2", extras = ["compatible-mypy"] }
+django-upgrade = "==1.33.0"
+djlint = "==1.50.4"
+factory-boy = "==3.3.3"
+ipdb = "==0.13.13"
+mypy = "==2.4.0"
+pre-commit = "==4.7.0"
+pytest = "==9.2.0"
+pytest-django = "==4.14.0"
+pytest-sugar = "==1.1.1"
+ruff = "==0.17.5"
+sphinx = "==9.2.0"
+sphinx-autobuild = "==2025.8.25"
+werkzeug = { version = "==3.1.9", extras = ["watchdog"] }
+
+[environments]
+default = { features = ["dev"], solve-group = "default" }
+production = { features = [], solve-group = "default" }
+
+[feature.dev.activation.env]
+DJANGO_SETTINGS_MODULE = "config.settings.local"
+DATABASE_URL = "postgres://health_huddle@localhost:5432/health_huddle"
+USE_DOCKER = "no"
+
+[tasks]
+db-init = "test -d .pgdata || initdb -D .pgdata -U health_huddle --auth=trust"
+db-start = { cmd = "pg_ctl -D .pgdata status > /dev/null || pg_ctl -D .pgdata -l .pgdata/server.log -o '-p 5432 -k /tmp' -w start", depends-on = ["db-init"] }
+db-create = { cmd = "psql -h localhost -U health_huddle -d postgres -tAc \"SELECT 1 FROM pg_database WHERE datname = 'health_huddle'\" | grep -q 1 || createdb -h localhost -U health_huddle health_huddle", depends-on = ["db-start"] }
+db-stop = "pg_ctl -D .pgdata stop"
+manage = "python manage.py"
+runserver = "python manage.py runserver_plus"
+migrate = "python manage.py migrate"
+makemigrations = "python manage.py makemigrations"
+shell = "python manage.py shell_plus"
+createsuperuser = "python manage.py createsuperuser"
+test = "pytest"
+lint = "pre-commit run --all-files"
+typecheck = "mypy health_huddle"

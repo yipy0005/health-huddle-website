@@ -1,46 +1,38 @@
 # Health Huddle · Faringdon pilot
 
-An editable, standalone copy of the browser application served by the [Faringdon pilot](https://health-huddle-faringdon-pilot.plumzebra16.chatgpt.site/). This Git history begins with the published client files and the VM packaging. The site includes the group directory, map, calendar, Champion workflows, attendance, notes, invitations and report downloads.
+Django project generated from [cookiecutter-django](https://github.com/cookiecutter/cookiecutter-django) (PostgreSQL, Docker, WhiteNoise, Mailpit, email-based users). The existing browser application is served unchanged from `health_huddle/static/app/` through the `home` view (`health_huddle/templates/pages/app.html`). It still keeps its data in the browser; no pilot data is stored on the server yet.
 
-## Run on a Linux VM
+All Python dependencies and commands are managed by [Pixi](https://pixi.sh). Do not use `pip` or `uv` directly.
 
-Extract the archive and open a shell in the health-huddle directory. With Docker Engine and the Compose plugin installed, run:
-
-```sh
-docker compose up --build -d
-curl -I http://127.0.0.1:8080/
-```
-
-The service listens on the VM's loopback address by default. To view it privately from your laptop, run the following on your laptop, replacing the SSH destination:
+## Local development with Pixi
 
 ```sh
-ssh -N -L 8080:127.0.0.1:8080 user@your-vm
+pixi install            # create the environment from pixi.lock
+pixi run db-create      # init and start a local PostgreSQL in .pgdata, create the database
+pixi run migrate
+pixi run runserver      # http://localhost:8000
+pixi run test           # pytest
+pixi run db-stop        # stop the local PostgreSQL
 ```
 
-Open http://localhost:8080 in your laptop browser. To serve a domain, point your HTTPS reverse proxy at 127.0.0.1:8080. To expose the demo directly on the VM network instead, run `BIND_ADDRESS=0.0.0.0 docker compose up -d` and visit http://VM-IP:8080 if your firewall permits it. Use HTTPS for microphone access on a remote domain.
+Other tasks: `manage <args>`, `makemigrations`, `shell`, `createsuperuser`, `lint`, `typecheck` (see `pixi.toml`). Add a dependency with `pixi add --pypi <package>` (or `pixi add --feature dev --pypi <package>` for development-only packages).
 
-Run `docker compose logs web` to see startup output and `docker compose down` to stop the service. After editing the site, run `docker compose up --build -d` to publish the edits.
+## Docker
 
-## Run without Docker
+`docker compose -f docker-compose.local.yml up --build` (or `just up`) runs Django, PostgreSQL and Mailpit. The images install the Pixi environment from `pixi.lock` (`default` for local, `production` for `docker-compose.production.yml`). Docker was not available when this migration was made, so the images are untested. See `docs/` for the cookiecutter-django guides.
 
-With Node.js 22 installed, run `node server.mjs` and visit http://localhost:8080. There are no npm dependencies. Restart the process after changing files. Alternatively, serve the contents of `site/` with a static web server configured to serve .mjs as JavaScript.
-
-## Source layout
+## Layout
 
 | Path | Contents |
 | --- | --- |
-| site/index.html, site/app.mjs | Entry page, navigation, forms, role previews and downloads |
-| site/model.mjs, site/seed-data.mjs | Group fixtures, recurrence, attendance, requests and reports |
-| site/map.mjs, site/media.mjs | Location discovery, voice notes and media storage |
-| site/styles.css, site/map.css, site/assets/ | Presentation, logo and sample leaflet |
-| server.mjs, Dockerfile, compose.yaml | VM server and container configuration |
+| `pixi.toml`, `pixi.lock` | Python dependencies, environments and tasks |
+| `config/` | Django settings (`base`, `local`, `production`, `test`) and URLs |
+| `health_huddle/static/app/` | Existing JavaScript app: `app.mjs`, `model.mjs`, `map.mjs`, `media.mjs`, `seed-data.mjs`, CSS, `assets/` |
+| `health_huddle/templates/pages/app.html` | Page shell for the JavaScript app |
+| `health_huddle/users/` | Email-based user model and allauth setup |
+| `compose/`, `docker-compose.*.yml` | Docker configuration |
+| `legacy-node/` | Previous Node server, Dockerfile and README, kept for reference |
 
 ## Pilot data and external services
 
-The pilot uses a fixed test date of 11 October 2026 and sample timetables. Role selection simulates access. The browser stores edits and recordings locally for each site address and browser profile. Moving to a new address starts a fresh demo. Hosting this repository does not create shared accounts, server-side records or email delivery. Use test data only.
-
-All pilot files are bundled. Google Fonts and the embedded Google Maps view use external services. Speech recognition depends on browser support.
-
-## Version control
-
-The archive includes the .git directory and a main branch. Run `git log -1` to inspect the starting commit. To push to your own empty Git repository, add its URL with `git remote add origin YOUR_REPOSITORY_URL` and run `git push -u origin main`.
+The pilot uses a fixed test date of 11 October 2026 and sample timetables. Role selection simulates access. The browser stores edits and recordings locally per site address and browser profile. Use test data only. Google Fonts and the embedded Google Maps view use external services. Speech recognition depends on browser support.
